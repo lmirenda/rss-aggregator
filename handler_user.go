@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/lmirenda/RSS-aggregator/internal/auth"
 	"github.com/lmirenda/RSS-aggregator/internal/database"
 	"net/http"
 	"time"
@@ -34,4 +35,22 @@ func (apiCfg *apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request
 		return
 	}
 	respondWithJson(w, 201, user)
+}
+
+func (apiCfg *apiConfig) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	apiKeyValue, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		respondWithError(w, 401, fmt.Sprintf("Error in headers: %v", err))
+		return
+	}
+	dbUser, err := apiCfg.DB.GetUserByAPIKey(r.Context(), apiKeyValue)
+
+	if err != nil {
+		respondWithError(w, 401, fmt.Sprintf("Invalid API Key: %v, Error: %v", apiKeyValue, err))
+		return
+	}
+
+	user := databaseUserToUser(dbUser)
+
+	respondWithJson(w, 200, user)
 }
